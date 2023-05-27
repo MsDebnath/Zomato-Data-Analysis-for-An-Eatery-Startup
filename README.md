@@ -29,5 +29,5 @@ help to choose the price range, and the last 2 help to choose the services for t
  3. Deciding to provide table reservations or online delivery services city-wise.
 
 Solution :
-To analyze and determine the ideal Cities, Price range, and Services for an eatery startup providing North Indian food in India's central region.
+    To analyze and determine the ideal Cities, Price range, and Services for an eatery startup providing North Indian food in India's central region.
 
