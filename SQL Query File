@@ -1,0 +1,147 @@
+/*Creates new database named Zomato*/
+CREATE DATABASE Zomato;
+
+/*Makes the new database as the default database*/
+USE Zomato;
+
+/*Creates new table named Zomato_data within Zomato database*/
+CREATE TABLE Zomato_Dataset(Restaurant_ID INT,
+Restaurant_Name VARCHAR(100),
+Country_Code INT,
+City VARCHAR(100),
+Address VARCHAR(250),
+Locality VARCHAR(250),
+Locality_Verbose VARCHAR(250),
+Longitude DOUBLE,
+Latitude DOUBLE,
+Cuisines VARCHAR(250),
+Average_Cost_for_two INT,
+Currency VARCHAR(100),
+Has_Table_booking VARCHAR(20),
+Has_Online_delivery VARCHAR(20),
+Is_delivering_now VARCHAR(20),
+Switch_to_order_menu VARCHAR(20),
+Price_range INT,
+Aggregate_rating DOUBLE,
+Rating_color VARCHAR(50),
+Rating_text VARCHAR(50),
+Votes INT);
+
+
+/*DATA CLEANING*/
+/*Column: Country code*/
+
+SET SQL_SAFE_UPDATEs = 0;
+DELETE FROM zomato_dataset
+WHERE Country_Code NOT IN (
+    SELECT Country_Code
+    FROM country_codename
+    WHERE Country = 'India'
+);
+
+/*Column: City*/
+
+DELETE FROM zomato_dataset
+WHERE City NOT IN (
+    SELECT City
+    FROM city_region
+    WHERE Region = 'Central'
+);
+
+/*Column: Cuisines*/
+
+DELETE FROM zomato_dataset
+WHERE Cuisines NOT LIKE "%North Indian%";
+
+
+/*DATA ANALYSIS*/
+/*PLACE----
+1. Which cities have the most number of eateries?*/
+
+SELECT City, COUNT(*) AS 'No._of_eateries'
+FROM zomato_dataset
+GROUP BY City
+ORDER BY COUNT(*) DESC;
+
+/*2.Which low-competition cities have the most eateries with aggregated ratings more than 4?*/
+
+SELECT City, 
+	SUM(CASE WHEN Aggregate_rating >= 4.0 THEN 1 ELSE 0 END) AS 'No._of_eateries' 
+FROM zomato_dataset
+WHERE City NOT IN ('New Delhi', 'Noida')
+GROUP BY City
+ORDER BY SUM(CASE WHEN Aggregate_rating >= 4.0 THEN 1 ELSE 0 END) DESC;
+
+
+/*Price----
+1.What is the relation between the Aggregate rating and the Average cost for two people at eateries
+in Allahabad, Varanasi, and Ghaziabad?*/
+
+SELECT City, ROUND(AVG(aggregate_rating),2) AS Avg_Aggregate_rating, 
+	   ROUND(AVG(Average_Cost_for_two),0) AS Avg_Cost
+FROM zomato_dataset
+WHERE City IN ('Allahabad', 'Varanasi', 'Ghaziabad')
+GROUP BY City
+ORDER BY Avg_Cost DESC;
+
+
+/*2.How many eateries have a price range of 1, 2, 3, or 4 
+in Allahabad, Varanasi, and Ghaziabad?*/
+
+SELECT City, 
+       COUNT(CASE WHEN Price_range = 1 THEN Restaurant_ID END) AS 'Price Range 1', 
+       COUNT(CASE WHEN Price_range = 2 THEN Restaurant_ID END) AS 'Price Range 2',
+       COUNT(CASE WHEN Price_range = 3 THEN Restaurant_ID END) AS 'Price Range 3',
+       COUNT(CASE WHEN Price_range = 4 THEN Restaurant_ID END) AS 'Price Range 4'
+FROM zomato_dataset
+WHERE City IN ('Allahabad', 'Varanasi', 'Ghaziabad')
+GROUP BY City;
+
+/*3. How many eateries have an average cost for two people 
+of more than RS. 1000, between Rs. 1000 and RS. 500, and less than Rs. 500 
+in Allahabad, Varanasi, and Ghaziabad?*/
+
+SELECT City,
+	SUM(CASE WHEN Average_cost_for_two <=500 THEN 1 ELSE 0 END) AS '<=500',
+	SUM(CASE WHEN Average_cost_for_two BETWEEN 500 AND 1000 THEN 1 ELSE 0 END) 
+		AS 'Between 500 and 1000',
+    SUM(CASE WHEN Average_cost_for_two >=1000 THEN 1 ELSE 0 END) as '>=1000'
+	
+FROM zomato_dataset
+WHERE City IN ('Allahabad', 'Varanasi', 'Ghaziabad')
+GROUP BY City;
+
+
+/*Services---
+1.How do eateries with table booking or online delivery services compare 
+in terms of pricing with eateries that do not offer these services in
+Allahabad, Varanasi, and Ghaziabad? */
+
+SELECT 
+  CASE 
+	WHEN Has_Table_booking = 'Yes' OR Has_Online_delivery= 'Yes' 
+	THEN 'With minimum one Service' 
+	ELSE 'Without any Services' 
+  END AS Service_Type,
+ ROUND(AVG(Average_Cost_for_two),0) AS Average_Cost
+FROM zomato_dataset
+WHERE City IN ('Allahabad', 'Varanasi', 'Ghaziabad')
+GROUP BY Service_Type
+ORDER BY Average_cost DESC;
+
+
+
+/*2.How many eateries offer online delivery or table booking service and what are 
+their average consumer votes in Allahabad, Varanasi, and Ghaziabad?*/
+
+SELECT City, 
+	ROUND(AVG(Votes),0) AS Avg_CosumerVotes,
+	SUM(CASE WHEN Has_Table_booking = 'Yes' THEN 1 ELSE 0 END) as Online_delivery,
+    SUM(CASE WHEN Has_Online_delivery = 'Yes' THEN 1 ELSE 0 END) as Table_booking 
+FROM zomato_dataset
+WHERE City IN ('Allahabad', 'Varanasi', 'Ghaziabad')
+GROUP BY City;
+
+
+
+
